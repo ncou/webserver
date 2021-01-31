@@ -6,6 +6,7 @@ namespace Chiron\WebServer\Exception;
 
 use RuntimeException;
 
+// TODO : renommer en ExecutionFailureException ???
 class WebServerException extends RuntimeException
 {
 }

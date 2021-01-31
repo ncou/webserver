@@ -3,13 +3,13 @@
 
 declare(strict_types=1);
 
-namespace Chiron\Serving;
+namespace Chiron\WebServer;
 
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
-use Chiron\Serving\Exception\WebServerException;
+use Chiron\WebServer\Exception\WebServerException;
 
 interface WebServerInterface
 {
-    public function run(bool $disableOutput = true, callable $callback = null): void;
+    public function run(bool $disableOutput = true, ?callable $callback = null): void;
 }

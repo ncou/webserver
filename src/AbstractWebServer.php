@@ -13,86 +13,28 @@ use Chiron\WebServer\Exception\WebServerException;
 
 abstract class AbstractWebServer implements WebServerInterface
 {
-    private $hostname;
-    private $port;
-
-    /**
-     * @var Process
-     */
-    private $process;
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function __construct(string $documentRoot, string $hostname, int $port, string $router = '', array $env = null)
+    public function run(bool $disableOutput = true, ?callable $callback = null): void
     {
-        $this->hostname = $hostname;
-        $this->port = $port;
-
-        $finder = new PhpExecutableFinder();
-        if (false === $binary = $finder->find(false)) {
-            throw new WebServerException('Unable to find the PHP binary.'); // TODO : créer une ServerException ou ServerBinaryNotFoundException ou UnexpectedServerException
-        }
-
-        if (isset($_SERVER['PANTHER_APP_ENV'])) {
-            if (null === $env) {
-                $env = [];
-            }
-            $env['APP_ENV'] = $_SERVER['PANTHER_APP_ENV'];
-        }
-
-        $this->process = new Process(
-            array_filter(array_merge(
-                [$binary],
-                $finder->findArguments(),
-                [
-                    '-dvariables_order=EGPCS',
-                    '-S',
-                    sprintf('%s:%d', $this->hostname, $this->port),
-                    '-t',
-                    $documentRoot,
-                    $router,
-                ]
-            )),
-            $documentRoot,
-            $env,
-            null,
-            null
-        );
-        //$this->process->disableOutput();
-
-        // Symfony Process 3.4 BC: In newer versions env variables always inherit,
-        // but in 4.4 inheritEnvironmentVariables is deprecated, but setOptions was removed
-        /*
-        if (\is_callable([$this->process, 'inheritEnvironmentVariables']) && \is_callable([$this->process, 'setOptions'])) {
-            $this->process->inheritEnvironmentVariables(true);
-        }*/
-    }
-
-    public function run(bool $disableOutput = true, callable $callback = null): void
-    {
+        // Ensure the server adress is not already taken.
         $this->checkPortAvailable($this->hostname, $this->port);
+        // Prepare the server command line to execute.
+        $process = $this->createServerProcess();
 
+        // Quiet mode (will unset the output callback).
         if ($disableOutput) {
-            $this->process->disableOutput();
+            $process->disableOutput();
             $callback = null;
         }
+        // Execute the command line and block the console.
+        $process->run($callback);
 
-        $this->process->run($callback);
-
-        if (! $this->process->isSuccessful()) {
-            $error = 'Server terminated unexpectedly.';
-            if ($this->process->isOutputDisabled()) {
-                $error .= ' Run the command again with -v option for more details.';
-            }
-
-            //throw new WebServerException($error);
+        if (! $process->isSuccessful()) {
+            // TODO : afficher seulement la ligne de commande ($process->getCommandLine()) et le getErrorOutput dans le message de l'exception ???
             throw new WebServerException(
-                sprintf('Could not start %s. Exit code: %d (%s). Error output: %s',
-                    'TOTO_SERVER',
-                    $this->process->getExitCode(),
-                    $this->process->getExitCodeText(),
-                    $this->process->getErrorOutput()
+                sprintf('Could not start Server. Exit code: %d (%s). Error output: %s',
+                    $process->getExitCode(),
+                    $process->getExitCodeText(),
+                    $process->getErrorOutput()
                 )
             );
         }
@@ -107,7 +49,7 @@ abstract class AbstractWebServer implements WebServerInterface
      * @throws \RuntimeException
      */
     // TODO : renommer la méthode isAdressAvailable() et la déplacer (+passer en static) dans la classe Uri ???
-    private function checkPortAvailable(string $hostname, int $port, bool $throw = true): void
+    protected function checkPortAvailable(string $hostname, int $port, bool $throw = true): void
     {
         $currentState = error_reporting();
         error_reporting(0);
@@ -120,6 +62,11 @@ abstract class AbstractWebServer implements WebServerInterface
             }
         }
     }
+
+    /**
+     * Prepare the server command line to be runned.
+     */
+    abstract protected function createServerProcess(): Process;
 
     /**
      * @param string $address server address
