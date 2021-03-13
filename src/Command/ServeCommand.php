@@ -122,6 +122,7 @@ class ServeCommand extends AbstractCommand
     {
         $output = $this->output;
 
+        // TODO : virer le static et utiliser $this->output pour éviter la ligne de code "$output = $this->output; et xxx use($output)" !!!!
         return static function (string $type, string $buffer) use ($output) {
             if (Process::ERR === $type && $output instanceof ConsoleOutputInterface) { // TODO : faire en sorte d'éviter cette dépendance vers la classe Process dans la partie "use" de cette classe
                 $output = $output->getErrorOutput();
