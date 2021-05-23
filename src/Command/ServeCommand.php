@@ -13,7 +13,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Chiron\WebServer\PhpWebServer;
 use Chiron\WebServer\WebServerInterface;
 use Chiron\WebServer\Exception\WebServerException;
+use Symfony\Component\Console\Output\ConsoleOutputInterface;
 
+//https://github.com/top-think/framework/blob/6.0/src/think/console/command/RunServer.php#L66
 
 //https://github.com/ddrv/php-slim-app/blob/ad9f4055437843761341c2ab3b74e46d93f5f889/app/Command/App/AppDevCommand.php
 //https://github.com/narrowspark/framework/blob/92e2d50883bede55253616e74966abc6972de3b0/src/Viserio/Component/WebServer/Command/ServerServeCommand.php
@@ -90,6 +92,13 @@ class ServeCommand extends AbstractCommand
 
             return self::FAILURE;
         }
+
+
+        //$output->writeln(sprintf('ThinkPHP Development server is started On <http://%s:%s/>', '0.0.0.0' == $host ? '127.0.0.1' : $host, $port));
+        //$output->writeln(sprintf('You can exit with <info>`CTRL-C`</info>'));
+        //$output->writeln(sprintf('Document root is: %s', $root));
+
+
 
         $this->success("Server listening on http://{$address}");
         /*
