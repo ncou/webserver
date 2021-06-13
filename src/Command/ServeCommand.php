@@ -15,6 +15,8 @@ use Chiron\WebServer\WebServerInterface;
 use Chiron\WebServer\Exception\WebServerException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 
+//https://github.com/symfony/web-server-bundle/blob/4.4/Command/ServerRunCommand.php#L126
+
 //https://github.com/top-think/framework/blob/6.0/src/think/console/command/RunServer.php#L66
 
 //https://github.com/ddrv/php-slim-app/blob/ad9f4055437843761341c2ab3b74e46d93f5f889/app/Command/App/AppDevCommand.php
@@ -113,6 +115,7 @@ class ServeCommand extends AbstractCommand
         try {
             $server = new PhpWebServer($hostname, (int) $port, $documentRoot, $router ?? '');
             $server->run($this->isDisabledOutput(), $this->getOutputCallback());
+            // TODO : il faudrait plutot faire un try/catch sur le type de classe Throwable, car la classe Process qui est utilisée dans le PhpWebServer peut lever des RuntimeException ou LogicException dans certains cas si les paramétres ne sont pas cohérents !!!
         } catch (WebServerException $e) {
             $this->error($e->getMessage());
 

@@ -27,12 +27,12 @@ abstract class AbstractWebServer implements WebServerInterface
             $callback = null;
         }
         // Execute the command line and block the console.
-        $process->run($callback);
+        $process->run($callback); // TODO : attention il peut il y avoir des exceptions qui sont levées par cette méthode, il faudrait faire un try/catch et les convertir en WebServerException !!!!
 
         if (! $process->isSuccessful()) {
             // TODO : afficher seulement la ligne de commande ($process->getCommandLine()) et le getErrorOutput dans le message de l'exception ??? Attention le getErrorOutput peut être vide !!!
             throw new WebServerException(
-                sprintf('Could not start Server. Exit code: %d (%s). Error output: %s',
+                sprintf('Could not start Server. Exit code: %d (%s). Error output: "%s".',
                     $process->getExitCode(),
                     $process->getExitCodeText(),
                     $process->getErrorOutput()
