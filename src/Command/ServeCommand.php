@@ -130,6 +130,9 @@ class ServeCommand extends AbstractCommand
         return $this->output->isQuiet();
     }
 
+    // TODO : améliorer le code; exemple avec des événements :
+    //https://github.com/huang-yi/swoole-watcher/blob/master/src/Watcher.php#L76
+    //https://github.com/seregazhuk/reactphp-fswatch/blob/master/src/FsWatch.php#L40
     private function getOutputCallback(): callable
     {
         $output = $this->output;
