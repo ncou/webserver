@@ -9,9 +9,12 @@ use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 use Chiron\WebServer\Exception\WebServerException;
 
+//https://github.com/laravel/octane/tree/1.x/src/Commands
+
 //https://github.com/symfony/web-server-bundle/blob/3700ded76d26311f096b37f6cf9b6fbc998f8c52/WebServerConfig.php#L135
 //https://github.com/symfony/panther/blob/0e722c123724ee4363e3694f5bb32545f60fb34b/src/ProcessManager/WebServerReadinessProbeTrait.php#L44
 
+// TODO : il faudra surement le transformer en trait !!! chercher l'inspiration ici pour interagir avec le serveur, le IO...etc : https://github.com/laravel/octane/tree/1.x/src/Commands/Concerns
 abstract class AbstractWebServer implements WebServerInterface
 {
     public function run(bool $disableOutput = true, ?callable $callback = null): void
@@ -29,6 +32,8 @@ abstract class AbstractWebServer implements WebServerInterface
         // Execute the command line and block the console.
         $process->run($callback); // TODO : attention il peut il y avoir des exceptions qui sont levées par cette méthode, il faudrait faire un try/catch et les convertir en WebServerException !!!!
 
+        // TODO : attention si on lance deux fois le serveur roadrunner sur la même url on obtien à la fois un message d'erreur dans la console et ensuite on affiche une seconde fois le même message. Donc c'est pas terrible !!!! Eventuellement afficher uniquement le message "Could not start Server." et puis c'est tout !!!
+        // https://github.com/symfony/web-server-bundle/blob/c283d46b40b1c9dee20771433a19fa7f4a9bb97a/WebServer.php#L57
         if (! $process->isSuccessful()) {
             // TODO : afficher seulement la ligne de commande ($process->getCommandLine()) et le getErrorOutput dans le message de l'exception ??? Attention le getErrorOutput peut être vide !!!
             throw new WebServerException(

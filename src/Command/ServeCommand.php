@@ -15,6 +15,16 @@ use Chiron\WebServer\WebServerInterface;
 use Chiron\WebServer\Exception\WebServerException;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 
+
+//https://github.com/cubny/php-built-in-server-manager/blob/master/server
+//https://github.com/nategood/httpful/blob/master/tests/bootstrap-server.php
+
+// ROUTER : https://github.com/JBlond/php-built-in-webserver-router-script
+
+//https://github.com/yiisoft/yii-console/blob/master/src/Command/Serve.php#L106
+
+//https://github.com/laravel/octane/tree/1.x/src/Commands/Concerns
+
 //https://github.com/symfony/web-server-bundle/blob/4.4/Command/ServerRunCommand.php#L126
 
 //https://github.com/top-think/framework/blob/6.0/src/think/console/command/RunServer.php#L66
