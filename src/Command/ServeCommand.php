@@ -5,15 +5,33 @@ declare(strict_types=1);
 namespace Chiron\WebServer\Command;
 
 use Chiron\Core\Command\AbstractCommand;
+use Chiron\WebServer\Exception\WebServerException;
+use Chiron\WebServer\Traits\WebAdressAvailableTrait;
+use Chiron\WebServer\Traits\WebServerTrait;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Console\Output\OutputInterface;
-use Chiron\WebServer\PhpWebServer;
-use Chiron\WebServer\WebServerInterface;
-use Chiron\WebServer\Exception\WebServerException;
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
+
+//https://github.com/laravel/framework/blob/b9203fca96960ef9cd8860cb4ec99d1279353a8d/src/Illuminate/Foundation/Console/ServeCommand.php
+
+// TODO : gérer avec un fichier de routing quand il y a un point dans l'url !!!!
+// https://github.com/cakephp/cakephp/blob/5.x/src/Command/ServerCommand.php#L142
+// https://github.com/cakephp/app/blob/4.x/webroot/index.php#L22
+// https://github.com/yiisoft/app/blob/master/public/index.php#L12
+// https://dev.to/crazedvic/improving-redirects-in-php-built-in-webserver-489d
+// https://github.com/drupal/drupal/blob/9.4.x/.ht.router.php
+
+// https://github.com/laravel/laravel/blob/8.x/server.php
+// https://github.com/laravel/framework/blob/536f5a830c3d1bb3b5c82ca8537b08c21009632a/src/Illuminate/Foundation/Console/ServeCommand.php#L133
+
+//https://github.com/codeigniter4/CodeIgniter4/blob/develop/system/Commands/Server/Serve.php
+//https://github.com/codeigniter4/CodeIgniter4/blob/develop/system/Commands/Server/rewrite.php
+
+//https://github.com/narrowspark/framework/blob/master/src/Viserio/Component/WebServer/Command/ServerServeCommand.php
+//https://github.com/narrowspark/framework/blob/master/src/Viserio/Component/WebServer/Resources/router.php
+
+//https://github.com/trantrungnt/BlogCategoryArticle/blob/master/server.php
 
 
 //https://github.com/cubny/php-built-in-server-manager/blob/master/server
@@ -54,37 +72,33 @@ use Symfony\Component\Console\Output\ConsoleOutputInterface;
 // TODO : créer une classe abstraite de cette commande : AbstractWebServerCommand qui pourra aussi être utilisée par les autres serveurs (roadrunner/workerman/reactphp) !!!!
 class ServeCommand extends AbstractCommand
 {
-    public const EXIT_CODE_NO_DOCUMENT_ROOT = 2;
-    public const EXIT_CODE_NO_ROUTING_FILE = 3;
-    public const EXIT_CODE_ADDRESS_TAKEN_BY_ANOTHER_PROCESS = 5;
-
-    private const DEFAULT_PORT = 8080;
-    private const DEFAULT_DOCROOT = 'public';
+    use WebAdressAvailableTrait;
+    use WebServerTrait;
 
     protected static $defaultName = 'serve';
 
+    private const DEFAULT_PORT = 8080;
+    private const DEFAULT_DOCROOT = 'public'; // TODO : utiliser un directory(@public) pour récupérer cette information !!!
+    private const DEFAULT_ROUTER = __DIR__ . '/../../resources/router.php';
+
     public function configure(): void
     {
+        // TODO : au lieu de passer un paramétre "adress" il faudrait plutot passer deux paramétre "host" et "port".
         $this
             ->setDescription('Runs PHP built-in web server')
             ->setHelp('In order to access server from remote machines use 0.0.0.0:8000. That is especially useful when running server in a virtual machine.')
             ->addArgument('address', InputArgument::OPTIONAL, 'Host to serve at', 'localhost')
             ->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Port to serve at', self::DEFAULT_PORT)
             ->addOption('docroot', 't', InputOption::VALUE_OPTIONAL, 'Document root to serve from', self::DEFAULT_DOCROOT)
-            ->addOption('router', 'r', InputOption::VALUE_OPTIONAL, 'Path to router script');
+            ->addOption('router', 'r', InputOption::VALUE_OPTIONAL, 'Path to router script', self::DEFAULT_ROUTER);
     }
 
     public function perform()
     {
-        // TODO : améliorer le code !!!!
-        $input = $this->input;
-        $output = $this->output;
-
-        $address = $input->getArgument('address');
-
-        $port = $input->getOption('port');
-        $docroot = $input->getOption('docroot');
-        $router = $input->getOption('router');
+        $address = $this->input->getArgument('address');
+        $port = $this->input->getOption('port');
+        $docroot = $this->input->getOption('docroot');
+        $router = $this->input->getOption('router');
 
         $documentRoot = getcwd() . '/' . $docroot; // TODO: can we do it better?
 
@@ -94,38 +108,51 @@ class ServeCommand extends AbstractCommand
 
         // TODO : remonter ce test dans la classe PhpWebServer dans le constructor ??? il faudrait aussi vérifier qu'il existe bien un fichier index.php / index.htm ou index.html dans ce répertoire !!!
         if (! is_dir($documentRoot)) {
-            $this->error("Document root \"$documentRoot\" does not exist.");
+            $this->error("Document root \"$documentRoot\" does not exist."); // TODO : utiliser un sprintf()
 
             return self::FAILURE;
         }
+
         // TODO : remonter ce test dans la classe SapiWebServer dans le constructor ???
         if ($router !== null && ! file_exists($router)) {
-            $this->error("Routing file \"$router\" does not exist.");
+            $this->error("Routing file \"$router\" does not exist."); // TODO : utiliser un sprintf()
 
             return self::FAILURE;
         }
-
 
         //$output->writeln(sprintf('ThinkPHP Development server is started On <http://%s:%s/>', '0.0.0.0' == $host ? '127.0.0.1' : $host, $port));
         //$output->writeln(sprintf('You can exit with <info>`CTRL-C`</info>'));
         //$output->writeln(sprintf('Document root is: %s', $root));
 
-
-
-        $this->success("Server listening on http://{$address}");
         /*
         $output->writeLn("Document root is \"{$documentRoot}\""); // TODO : faire un realpath sur le $documentRoot
         if ($router) {
-            $output->writeLn("Routing file is \"$router\"");
+            $output->writeLn("Routing file is \"$router\""); // TODO : faire un realpath sur le $documentRoot
         }*/
-        $this->info('Quit the server with CTRL-C or COMMAND-C.');
 
         [$hostname, $port] = explode(':', $address);
 
         try {
-            $server = new PhpWebServer($hostname, (int) $port, $documentRoot, $router ?? '');
-            $server->run($this->isDisabledOutput(), $this->getOutputCallback());
-            // TODO : il faudrait plutot faire un try/catch sur le type de classe Throwable, car la classe Process qui est utilisée dans le PhpWebServer peut lever des RuntimeException ou LogicException dans certains cas si les paramétres ne sont pas cohérents !!!
+            $this->assertAdressAvailable($hostname, (int) $port);
+
+            //$this->success("Server listening on http://{$address}");
+            //$this->info('Quit the server with CTRL-C or COMMAND-C.');
+
+
+
+            $server = $this->createServerProcess($hostname, (int) $port, $documentRoot, $router);
+
+            $this->info('Server running…');
+            //$this->info('Quit the server with CTRL-C or COMMAND-C.');
+            $this->output->writeln([
+                '',
+                '  Local: <fg=white;options=bold>http://'.$hostname.':'.(int) $port.' </>',
+                '',
+                '  <fg=yellow>Press Ctrl+C to stop the server</>',
+                '',
+            ]);
+
+            $this->runServer($server);
         } catch (WebServerException $e) {
             $this->error($e->getMessage());
 
@@ -135,24 +162,39 @@ class ServeCommand extends AbstractCommand
         return self::SUCCESS;
     }
 
-    private function isDisabledOutput(): bool
+    // TODO : vérifier si c'est normal que le $router soit null !!!, et dans ce cas je suppose que $documentRoot peut aussi $etre null donc le typehint ne sera pas bon !!!
+    private function createServerProcess(string $hostname, int $port, string $documentRoot, ?string $router): Process
     {
-        return $this->output->isQuiet();
-    }
+        // Locate the PHP Binary path.
+        $finder = new PhpExecutableFinder();
+        $binary = $finder->find(includeArgs: false);
 
-    // TODO : améliorer le code; exemple avec des événements :
-    //https://github.com/huang-yi/swoole-watcher/blob/master/src/Watcher.php#L76
-    //https://github.com/seregazhuk/reactphp-fswatch/blob/master/src/FsWatch.php#L40
-    private function getOutputCallback(): callable
-    {
-        $output = $this->output;
+        if ($binary === false) {
+            throw new WebServerException('Unable to find the PHP binary.');
+        }
 
-        // TODO : virer le static et utiliser $this->output pour éviter la ligne de code "$output = $this->output; et xxx use($output)" !!!!
-        return static function (string $type, string $buffer) use ($output) {
-            if (Process::ERR === $type && $output instanceof ConsoleOutputInterface) { // TODO : faire en sorte d'éviter cette dépendance vers la classe Process dans la partie "use" de cette classe
-                $output = $output->getErrorOutput();
-            }
-            $output->write($buffer, false, OutputInterface::OUTPUT_RAW);
-        };
+        // Try to enable the xdebug profiler.
+        $xdebugArgs = ini_get('xdebug.profiler_enable_trigger') ? ['-dxdebug.profiler_enable_trigger=1'] : []; // TODO : vérifier si on a besoin de cette instruction !!!
+        // Prepare the PHP built-in web server command line.
+        $process = new Process(
+            array_filter(array_merge(
+                [$binary],
+                $finder->findArguments(),
+                $xdebugArgs,
+                [
+                    '-dvariables_order=EGPCS',
+                    '-S',
+                    sprintf('%s:%d', $hostname, $port),
+                //                '-t',
+                //                $documentRoot,
+                    $router,
+                ]
+            ))
+        );
+        // Set current php directory & disable timeout.
+        $process->setWorkingDirectory($documentRoot); // TODO : vérifier si on a besoin de cette instruction !!!
+        $process->setTimeout(null);
+
+        return $process;
     }
 }
