@@ -77,7 +77,7 @@ class ServeCommand extends AbstractCommand
 
     protected static $defaultName = 'serve';
 
-    private const DEFAULT_PORT = 8080;
+    private const DEFAULT_PORT = 8000;
     private const DEFAULT_DOCROOT = 'public'; // TODO : utiliser un directory(@public) pour récupérer cette information !!!
     private const DEFAULT_ROUTER = __DIR__ . '/../../resources/router.php';
 
